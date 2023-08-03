@@ -28,14 +28,21 @@ contract Token is
   mapping(address => address) public refInfo;
   mapping(address => uint256) public lockToken;
   mapping(uint256 => uint256) public packages;
-  uint256[3] public commissions = [3, 2, 1]; // 0.3, 0.2, 0.1
   mapping(address => uint256) public commissionToken;
+  uint256[3] public commissions = [3, 2, 1]; // 0.3, 0.2, 0.1
+  uint256 public commissionDecimal = 1000;
 
   modifier notContract() {
     require(!_isContract(msg.sender), 'Contract not allowed');
     require(msg.sender == tx.origin, 'Proxy contract not allowed');
     _;
   }
+
+  event BuyPrivateSale(address indexed buyer, uint256 amount);
+  event ChangeCommission(address indexed leader, uint256 amount);
+  event WithdrawCommission(address indexed leader, uint256 amount);
+  event AddLeader(address indexed leader);
+  event RemoveLeader(address indexed leader);
 
   /**
    * initialize function
@@ -46,6 +53,10 @@ contract Token is
     tokenUSDT = IERC20(_usdtAddress);
 
     _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+
+    packages[1000 * 10 ** 18] = 10000 * 10 ** 18;
+    packages[5000 * 10 ** 18] = 51020 * 10 ** 18;
+    packages[10000 * 10 ** 18] = 105263 * 10 ** 18;
   }
 
   /**
@@ -75,6 +86,8 @@ contract Token is
   ) external notContract nonReentrant onlyRole(DEFAULT_ADMIN_ROLE) {
     require(_leader != address(0), 'AddLeader: can not add address 0');
     leaders[_leader] = true;
+
+    emit AddLeader(_leader);
   }
 
   /**
@@ -86,6 +99,8 @@ contract Token is
   ) external notContract nonReentrant onlyRole(DEFAULT_ADMIN_ROLE) {
     require(_leader != address(0), 'RemoveLeader: can not remove address 0');
     leaders[_leader] = false;
+
+    emit RemoveLeader(_leader);
   }
 
   /**
@@ -117,14 +132,18 @@ contract Token is
     // lock token
     lockToken[_sender] = packages[_amount];
 
+    emit BuyPrivateSale(_sender, _amount);
+
     // share token to leader
     uint256 _maxLevel = commissions.length;
 
     for (uint256 i = 0; i < _maxLevel; i++) {
       address _parent = refInfo[_sender];
-      
+
       if (_parent != address(0) && leaders[_parent] == true) {
-        commissionToken[_parent] += _amount.div(1000).mul(commissions[i]);
+        uint256 commission = _amount.div(commissionDecimal).mul(commissions[i]);
+        commissionToken[_parent] += commission;
+        emit ChangeCommission(_parent, commission);
       }
       _sender = _parent;
     }
@@ -134,17 +153,22 @@ contract Token is
    * leader withdraw their commission
    */
   function leaderWithdraw() external notContract nonReentrant {
-    require(leaders[_msgSender()], 'LeaderWithdraw: sender not leader');
+    address sender = _msgSender();
+
+    require(leaders[sender], 'LeaderWithdraw: sender not leader');
     require(
-      commissionToken[_msgSender()] > 0,
+      commissionToken[sender] > 0,
       'LeaderWithdraw: commission must greater than 0'
     );
 
+    uint256 withdrawAmount = commissionToken[sender];
     // transfer token to leader
-    tokenUSDT.transfer(_msgSender(), commissionToken[_msgSender()]);
+    tokenUSDT.transfer(sender, withdrawAmount);
 
     // reset commission
-    commissionToken[_msgSender()] = 0;
+    commissionToken[sender] = 0;
+
+    emit WithdrawCommission(sender, withdrawAmount);
   }
 
   /**
