@@ -43,7 +43,7 @@ contract Token is
   event BuyPrivateSale(address indexed buyer, uint256 amount, address referral);
   event ChangeCommission(address indexed leader, uint256 amount);
   event WithdrawCommission(address indexed leader, uint256 amount);
-  event AddLeader(address indexed leader);
+  event AddLeader(address indexed leader, address indexed referral);
   event RemoveLeader(address indexed leader);
 
   /**
@@ -84,12 +84,15 @@ contract Token is
    * @param _leader is leader address
    */
   function addLeader(
-    address _leader
+    address _leader,
+    address _referral
   ) external notContract nonReentrant onlyRole(DEFAULT_ADMIN_ROLE) {
     require(_leader != address(0), 'AddLeader: can not add address 0');
     leaders[_leader] = true;
 
-    emit AddLeader(_leader);
+    refInfo[_leader] = _referral;
+
+    emit AddLeader(_leader, _referral);
   }
 
   /**
