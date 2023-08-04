@@ -24,7 +24,7 @@ contract Token is
   uint256 public UNLOCK_TIME = 12312312312;
   uint256 private _totalPrivateSale = 0;
   // End time of private sale 20/3/2024
-  uint256 endTime = 1710892800;
+  uint256 END_PRIVATE_SALE_TIME = 1710892800;
 
   mapping(address => bool) public leaders;
   mapping(address => address) public refInfo;
@@ -114,7 +114,7 @@ contract Token is
     address _referral,
     uint256 _amount
   ) external notContract nonReentrant {
-    require(block.timestamp <= endTime, 'PrivateSale: ended');
+    require(block.timestamp <= END_PRIVATE_SALE_TIME, 'PrivateSale: ended');
     require(packages[_amount] != 0, 'PrivateSale: cann not find package');
     require(
       _totalPrivateSale + packages[_amount] <= MAX_PRIVATE_SALE,
