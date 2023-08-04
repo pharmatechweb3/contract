@@ -19,10 +19,11 @@ contract Token is
   IERC20 public tokenUSDT;
 
   // Max supply of PMT token
-  uint256 public MAX_SUPPLY = 200000000;
-  uint256 public MAX_PRIVATE_SALE = 50000000;
+  uint256 public MAX_SUPPLY = 200000000 * 10 ** decimals();
+  uint256 public MAX_PRIVATE_SALE = 50000000 * 10 ** decimals();
   uint256 public UNLOCK_TIME = 12312312312;
   uint256 private _totalPrivateSale = 0;
+
   // End time of private sale 20/3/2024
   uint256 END_PRIVATE_SALE_TIME = 1710892800;
 
@@ -56,9 +57,9 @@ contract Token is
 
     _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
-    packages[1000 * 10 ** 18] = 10000 * 10 ** 18;
-    packages[5000 * 10 ** 18] = 51020 * 10 ** 18;
-    packages[10000 * 10 ** 18] = 105263 * 10 ** 18;
+    packages[1000 * 10 ** decimals()] = 10000 * 10 ** decimals();
+    packages[5000 * 10 ** decimals()] = 51020 * 10 ** decimals();
+    packages[10000 * 10 ** decimals()] = 105263 * 10 ** decimals();
   }
 
   /**
@@ -122,6 +123,10 @@ contract Token is
     require(
       _totalPrivateSale + packages[_amount] <= MAX_PRIVATE_SALE,
       'PrivateSale: Reach max private sale'
+    );
+    require(
+      totalSupply() + _amount <= MAX_SUPPLY,
+      'PrivateSale: Reach max supply'
     );
     require(leaders[_referral], 'PrivateSale: address is not leader');
 
