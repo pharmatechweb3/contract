@@ -38,7 +38,7 @@ contract Token is
     _;
   }
 
-  event BuyPrivateSale(address indexed buyer, uint256 amount);
+  event BuyPrivateSale(address indexed buyer, uint256 amount, address referral);
   event ChangeCommission(address indexed leader, uint256 amount);
   event WithdrawCommission(address indexed leader, uint256 amount);
   event AddLeader(address indexed leader);
@@ -132,7 +132,7 @@ contract Token is
     // lock token
     lockToken[_sender] = packages[_amount];
 
-    emit BuyPrivateSale(_sender, _amount);
+    emit BuyPrivateSale(_sender, _amount, _referral);
 
     // share token to leader
     uint256 _maxLevel = commissions.length;
