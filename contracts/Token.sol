@@ -16,24 +16,31 @@ contract Token is
   ReentrancyGuard
 {
   using SafeMath for uint256;
-  IERC20 public tokenUSDT;
 
-  // Max supply of PMT token
+  struct Package {
+    address buyer;
+    uint256 amount;
+    uint256 unlockTime;
+    bool isUnlock;
+  }
+
   uint256 public MAX_SUPPLY = 200000000 * 10 ** decimals();
   uint256 public MAX_PRIVATE_SALE = 50000000 * 10 ** decimals();
-  uint256 public UNLOCK_TIME = 12312312312;
-  uint256 private _totalPrivateSale = 0;
-
-  // End time of private sale 20/3/2024
-  uint256 END_PRIVATE_SALE_TIME = 1710892800;
+  uint256 public LOCK_DURATION = 15552000;
+  uint256 public END_PRIVATE_SALE_TIME = 1710892800;
 
   mapping(address => bool) public leaders;
   mapping(address => address) public refInfo;
   mapping(address => uint256) public lockToken;
   mapping(uint256 => uint256) public packages;
+  mapping(uint256 => Package) public packageHistory;
   mapping(address => uint256) public commissionToken;
   uint256[3] public commissions = [3, 2, 1]; // 0.3, 0.2, 0.1
   uint256 public commissionDecimal = 1000;
+  uint256 public packageIndex = 1;
+  IERC20 public tokenUSDT;
+
+  uint256 private _totalPrivateSale = 0;
 
   modifier notContract() {
     require(!_isContract(msg.sender), 'Contract not allowed');
@@ -41,11 +48,17 @@ contract Token is
     _;
   }
 
-  event BuyPrivateSale(address indexed buyer, uint256 amount, address referral);
+  event BuyPrivateSale(
+    address indexed buyer,
+    uint256 amount,
+    address referral,
+    uint256 index
+  );
   event ChangeCommission(address indexed leader, uint256 amount);
   event WithdrawCommission(address indexed leader, uint256 amount);
   event AddLeader(address indexed leader, address indexed referral);
   event RemoveLeader(address indexed leader);
+  event Unlock(uint256 packageIndex);
 
   /**
    * initialize function
@@ -143,7 +156,15 @@ contract Token is
     // lock token
     lockToken[_sender] = packages[_amount];
 
-    emit BuyPrivateSale(_sender, _amount, _referral);
+    // add package history
+    packageHistory[packageIndex] = Package(
+      _sender,
+      packages[_amount],
+      block.timestamp + LOCK_DURATION,
+      false
+    );
+
+    emit BuyPrivateSale(_sender, _amount, _referral, packageIndex);
 
     // share token to leader
     uint256 _maxLevel = commissions.length;
@@ -158,6 +179,8 @@ contract Token is
       }
       _sender = _parent;
     }
+
+    packageIndex++;
   }
 
   /**
@@ -197,9 +220,24 @@ contract Token is
   /**
    * unlock token of user
    */
-  function unlock() external notContract nonReentrant {
+  function unlock(uint256 index) external notContract nonReentrant {
     uint256 currentTimestamp = block.timestamp;
-    require(currentTimestamp >= UNLOCK_TIME, 'Not Unlock Time');
+    address sender = _msgSender();
+
+    Package storage package = packageHistory[index];
+
+    require(sender == package.buyer, 'Unlock: not buyer');
+    require(
+      currentTimestamp >= package.unlockTime,
+      'Unlock: not time to unlock yet'
+    );
+    require(package.isUnlock == false, 'Unlock: package already unlock');
+
+    lockToken[sender] -= package.amount;
+
+    package.isUnlock = true;
+
+    emit Unlock(index);
   }
 
   /**
