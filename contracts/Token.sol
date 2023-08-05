@@ -52,7 +52,8 @@ contract Token is
     address indexed buyer,
     uint256 amount,
     address referral,
-    uint256 index
+    uint256 index,
+    uint256 unlockTime
   );
   event ChangeCommission(address indexed leader, uint256 amount);
   event WithdrawCommission(address indexed leader, uint256 amount);
@@ -164,7 +165,13 @@ contract Token is
       false
     );
 
-    emit BuyPrivateSale(_sender, _amount, _referral, packageIndex);
+    emit BuyPrivateSale(
+      _sender,
+      _amount,
+      _referral,
+      packageIndex,
+      block.timestamp + LOCK_DURATION
+    );
 
     // share token to leader
     uint256 _maxLevel = commissions.length;
