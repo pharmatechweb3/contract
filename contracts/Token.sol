@@ -65,11 +65,14 @@ contract Token is
    * initialize function
    * @param _usdtAddress is usdt address
    */
-  constructor(address _usdtAddress) ERC20('Pharmatech Token', 'PMT') {
+  constructor(
+    address _adminAddress,
+    address _usdtAddress
+  ) ERC20('Pharmatech Token', 'PMT') {
     require(_usdtAddress != address(0), 'invalid-USDT');
     tokenUSDT = IERC20(_usdtAddress);
 
-    _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    _grantRole(DEFAULT_ADMIN_ROLE, _adminAddress);
 
     packages[1000 * 10 ** decimals()] = 10000 * 10 ** decimals();
     packages[5000 * 10 ** decimals()] = 51020 * 10 ** decimals();
@@ -254,19 +257,37 @@ contract Token is
   function getAvailableBalance(address _wallet) public view returns (uint256) {
     return balanceOf(_wallet).sub(lockToken[_wallet]);
   }
-  
-  function transferFrom(address _from, address _to, uint256 _amount) public override returns (bool) {
-      uint256 availableAmount = getAvailableBalance(_from);
-      require(availableAmount >= _amount, 'Not Enough Available Token');
 
-      return super.transferFrom(_from, _to, _amount);
+  /**
+   * oferwrite function transferFrom
+   * @param _from address
+   * @param _to address
+   * @param _amount of transfer
+   */
+  function transferFrom(
+    address _from,
+    address _to,
+    uint256 _amount
+  ) public override returns (bool) {
+    uint256 availableAmount = getAvailableBalance(_from);
+    require(availableAmount >= _amount, 'Not Enough Available Token');
+
+    return super.transferFrom(_from, _to, _amount);
   }
 
-  function transfer(address _to, uint256 _amount) public override returns (bool) {
-      uint256 availableAmount = getAvailableBalance(_msgSender());
-      require(availableAmount >= _amount, 'Not Enough Available Token');
+  /**
+   * overwrite function transfer
+   * @param _to address
+   * @param _amount of transfer
+   */
+  function transfer(
+    address _to,
+    uint256 _amount
+  ) public override returns (bool) {
+    uint256 availableAmount = getAvailableBalance(_msgSender());
+    require(availableAmount >= _amount, 'Not Enough Available Token');
 
-      return super.transfer(_to, _amount);
+    return super.transfer(_to, _amount);
   }
 
   /**
