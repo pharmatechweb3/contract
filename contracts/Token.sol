@@ -12,7 +12,6 @@ contract Token is
   ERC20,
   ERC20Burnable,
   AccessControlEnumerable,
-  Ownable,
   ReentrancyGuard
 {
   using SafeMath for uint256;
@@ -48,12 +47,16 @@ contract Token is
     _;
   }
 
+  modifier onlyLeader() {
+    require(leaders[msg.sender], 'only leader');
+    _;
+  }
+
   event BuyPrivateSale(
     address indexed buyer,
     uint256 amount,
     address referral,
-    uint256 index,
-    uint256 unlockTime
+    uint256 index
   );
   event ChangeCommission(address indexed leader, uint256 amount);
   event WithdrawCommission(address indexed leader, uint256 amount);
@@ -114,6 +117,19 @@ contract Token is
   }
 
   /**
+   * add sub leader
+   * @param _subLeader is leader address
+   */
+  function addSubLeader(
+    address _subLeader
+  ) external notContract nonReentrant onlyLeader {
+    leaders[_subLeader] = true;
+
+    refInfo[_subLeader] = msg.sender;
+    emit AddLeader(_subLeader, msg.sender);
+  }
+
+  /**
    * remove leader
    * @param _leader is leader address
    */
@@ -168,13 +184,7 @@ contract Token is
       false
     );
 
-    emit BuyPrivateSale(
-      _sender,
-      _amount,
-      _referral,
-      packageIndex,
-      block.timestamp + LOCK_DURATION
-    );
+    emit BuyPrivateSale(_sender, _amount, _referral, packageIndex);
 
     // share token to leader
     uint256 _maxLevel = commissions.length;
@@ -196,10 +206,9 @@ contract Token is
   /**
    * leader withdraw their commission
    */
-  function leaderWithdraw() external notContract nonReentrant {
+  function leaderWithdraw() external notContract nonReentrant onlyLeader {
     address sender = _msgSender();
 
-    require(leaders[sender], 'LeaderWithdraw: sender not leader');
     require(
       commissionToken[sender] > 0,
       'LeaderWithdraw: commission must greater than 0'
@@ -259,35 +268,20 @@ contract Token is
   }
 
   /**
-   * oferwrite function transferFrom
-   * @param _from address
-   * @param _to address
-   * @param _amount of transfer
+   * check before transfer
+   * @param from from address
+   * @param to is to address
+   * @param amount is amount of transfer
    */
-  function transferFrom(
-    address _from,
-    address _to,
-    uint256 _amount
-  ) public override returns (bool) {
-    uint256 availableAmount = getAvailableBalance(_from);
-    require(availableAmount >= _amount, 'Not Enough Available Token');
+  function _beforeTokenTransfer(
+    address from,
+    address to,
+    uint256 amount
+  ) internal override {
+    uint256 availableAmount = getAvailableBalance(from);
+    require(availableAmount >= amount, 'Not Enough Available Token');
 
-    return super.transferFrom(_from, _to, _amount);
-  }
-
-  /**
-   * overwrite function transfer
-   * @param _to address
-   * @param _amount of transfer
-   */
-  function transfer(
-    address _to,
-    uint256 _amount
-  ) public override returns (bool) {
-    uint256 availableAmount = getAvailableBalance(_msgSender());
-    require(availableAmount >= _amount, 'Not Enough Available Token');
-
-    return super.transfer(_to, _amount);
+    super._beforeTokenTransfer(from, to, amount);
   }
 
   /**
