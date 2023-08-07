@@ -76,6 +76,7 @@ contract Token is
     tokenUSDT = IERC20(_usdtAddress);
 
     _grantRole(DEFAULT_ADMIN_ROLE, _adminAddress);
+    leaders[_adminAddress] = true;
 
     packages[1000 * 10 ** decimals()] = 10000 * 10 ** decimals();
     packages[5000 * 10 ** decimals()] = 51020 * 10 ** decimals();
