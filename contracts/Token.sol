@@ -268,21 +268,25 @@ contract Token is
     return balanceOf(_wallet).sub(lockToken[_wallet]);
   }
 
-  /**
-   * check before transfer
-   * @param from from address
-   * @param to is to address
-   * @param amount is amount of transfer
-   */
-  function _beforeTokenTransfer(
-    address from,
-    address to,
-    uint256 amount
-  ) internal override {
-    uint256 availableAmount = getAvailableBalance(from);
-    require(availableAmount >= amount, 'Not Enough Available Token');
+  function transferFrom(
+    address _from,
+    address _to,
+    uint256 _amount
+  ) public override returns (bool) {
+    uint256 availableAmount = getAvailableBalance(_from);
+    require(availableAmount >= _amount, 'Not Enough Available Token');
 
-    super._beforeTokenTransfer(from, to, amount);
+    return super.transferFrom(_from, _to, _amount);
+  }
+
+  function transfer(
+    address _to,
+    uint256 _amount
+  ) public override returns (bool) {
+    uint256 availableAmount = getAvailableBalance(_msgSender());
+    require(availableAmount >= _amount, 'Not Enough Available Token');
+
+    return super.transfer(_to, _amount);
   }
 
   /**
