@@ -11,16 +11,28 @@ import "./ILock.sol";
 contract PrivateSaleV1 is ILock, Ownable, ReentrancyGuard {
     using SafeMath for uint256;
     
+    enum PackageType {
+        Basic,
+        Medium,
+        Premium
+    }
+
     struct Package {
         uint256 index;
+        PackageType packageType;
         address buyer;
         uint256 amount;
         uint256 unlockTime;
         bool isUnlock;
     }
 
+    struct PackageInfo{
+        uint256 price;
+        PackageType packageType;
+    }
+
     mapping (address => uint256) private _lock;
-    mapping(uint256 => uint256) public packages;
+    mapping(uint256 => PackageInfo) public packages;
     mapping(uint256 => Package) public packageHistory;
     mapping(address => uint256[]) public userPackages;
 
@@ -31,11 +43,8 @@ contract PrivateSaleV1 is ILock, Ownable, ReentrancyGuard {
     uint256 public LOCK_DURATION = 600;
     bool public isLock;
 
-    event Buy(
-        address indexed buyer,
-        uint256 amount,
-        uint256 index
-    );
+    // event
+    event Buy(address indexed buyer, uint256 amount, uint256 index);
     event Unlock(uint256 packageIndex);
 
     modifier notContract() {
@@ -50,9 +59,9 @@ contract PrivateSaleV1 is ILock, Ownable, ReentrancyGuard {
         receiveAddress = _receiveAddress;
         isLock = false;
 
-        packages[1000 * 10 ** 18] = 90; // 0.090 USDT/PMT
-        packages[5000 * 10 ** 18] = 85; // 0.085 USDT/PMT
-        packages[10000 * 10 ** 18] = 80;// 0.080 USDT/PMT
+        packages[1000 * 10 ** 18] = PackageInfo(90, PackageType.Basic); // 0.090 USDT/PMT
+        packages[5000 * 10 ** 18] = PackageInfo(85, PackageType.Medium); // 0.085 USDT/PMT
+        packages[10000 * 10 ** 18] = PackageInfo(80, PackageType.Premium);// 0.080 USDT/PMT
     }
 
     /**
@@ -69,14 +78,16 @@ contract PrivateSaleV1 is ILock, Ownable, ReentrancyGuard {
     */
     function buy(uint256 _amount) external notContract nonReentrant {
         require(isLock == false, 'PrivateSale: ended');
-        require(packages[_amount] != 0, 'PrivateSale: cann not find package');
+        require(packages[_amount].price != 0, 'PrivateSale: cann not find package');
         require(token.balanceOf(address(this)) >= _amount, "PrivateSaleV1: insufficient token balance");
         address _sender = _msgSender();
+
+        PackageInfo memory _package = packages[_amount];
 
         // send token to this address
         tokenUsdt.transferFrom(_sender, receiveAddress, _amount);
 
-        uint256 amount = _amount.mul(1000).div(packages[_amount]);
+        uint256 amount = _amount.mul(1000).div(_package.price);
 
         // mint token to user address
         token.transfer(_sender, amount);
@@ -87,6 +98,7 @@ contract PrivateSaleV1 is ILock, Ownable, ReentrancyGuard {
         // add package history
         packageHistory[packageIndex] = Package(
             packageIndex,                       // package index
+            _package.packageType,               // package type
             _sender,                            // buyer
             amount,                             // package
             block.timestamp + LOCK_DURATION,    // duration
