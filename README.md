@@ -45,4 +45,11 @@ yarn hardhat node
 yarn hardhat test
 ```
 
+```shell
+    solc --abi contracts/Token.sol
+    solc --bin contracts/Token.sol
+    abigen --bin=build/Token.bin --abi=build/Token.abi --pkg=store --out=Token.go   
+```
+
+
 

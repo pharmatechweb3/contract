@@ -2,13 +2,17 @@ import '@nomiclabs/hardhat-waffle';
 import { task } from 'hardhat/config';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-task('deploy', 'Deploy artwork contract').setAction(
+task('deploy', 'Deploy token contract').setAction(
   async (_, hre: HardhatRuntimeEnvironment): Promise<void> => {
-    const Artwork = await hre.ethers.getContractFactory('Greeter');
-    const artwork = await Artwork.deploy('Greeter');
+    // const signer = new hre.ethers.Wallet(
+    //   '89314a2e5210e420ca7bf88b9b5e65f23be69a201be95d8b44977dbef5310b2d'
+    // );
 
-    await artwork.deployed();
+    const Token = await hre.ethers.getContractFactory('Token');
+    const token = await Token.deploy();
 
-    console.log('artwork deployed to:', artwork.address);
+    await token.deployed();
+
+    console.log('token deployed to:', token.address);
   }
 );

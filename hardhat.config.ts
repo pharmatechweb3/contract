@@ -17,14 +17,8 @@ const config: HardhatUserConfig = {
     artifacts: './frontend/src/artifacts'
   },
   networks: {
-    hardhat: {
-      mining: {
-        auto: false,
-        interval: 1000
-      }
-    },
-    ropsten: {
-      url: process.env.ROPSTEN_URL || '',
+    bscTestnet: {
+      url: process.env.BSC_TESTNET_URL || '',
       accounts:
         process.env.TEST_ETH_ACCOUNT_PRIVATE_KEY !== undefined
           ? [process.env.TEST_ETH_ACCOUNT_PRIVATE_KEY]
