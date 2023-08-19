@@ -50,9 +50,9 @@ contract PrivateSaleV1 is ILock, Ownable, ReentrancyGuard {
         receiveAddress = _receiveAddress;
         isLock = false;
 
-        packages[1000 * 10 ** 18] = 10000 * 10 ** 18;
-        packages[5000 * 10 ** 18] = 51020 * 10 ** 18;
-        packages[10000 * 10 ** 18] = 105263 * 10 ** 18;
+        packages[1000 * 10 ** 18] = 90; // 0.090 USDT/PMT
+        packages[5000 * 10 ** 18] = 85; // 0.085 USDT/PMT
+        packages[10000 * 10 ** 18] = 80;// 0.080 USDT/PMT
     }
 
     /**
@@ -76,17 +76,19 @@ contract PrivateSaleV1 is ILock, Ownable, ReentrancyGuard {
         // send token to this address
         tokenUsdt.transferFrom(_sender, receiveAddress, _amount);
 
+        uint256 amount = _amount.mul(1000).div(packages[_amount]);
+
         // mint token to user address
-        token.transfer(_sender, packages[_amount]);
+        token.transfer(_sender, amount);
 
         // lock token
-        _lock[_sender] += packages[_amount];
+        _lock[_sender] += amount;
 
         // add package history
         packageHistory[packageIndex] = Package(
             packageIndex,                       // package index
             _sender,                            // buyer
-            packages[_amount],                  // package
+            amount,                             // package
             block.timestamp + LOCK_DURATION,    // duration
             false                               // lock status
         );
@@ -125,10 +127,11 @@ contract PrivateSaleV1 is ILock, Ownable, ReentrancyGuard {
     * for withdraw immediately if there are some problems
     * @param _to is address receive token
     */
-    function withdrawImmediately(address _to) external notContract nonReentrant onlyOwner{
-        require(_to != address(0), 'Withdraw: transfer to null address');
+    function withdrawImmediately(address _to, uint256 _amount) external notContract nonReentrant onlyOwner {
+        require(_to != address(0), "PrivateSaleV1: transfer to null address");
+        require(_amount <= token.balanceOf(address(this)), "PrivateSaleV1: amount greater than token balance");
 
-        token.transfer(_to, token.balanceOf(address(this)));
+        token.transfer(_to, _amount);
     }
 
 
