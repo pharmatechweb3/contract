@@ -12,6 +12,7 @@ contract PrivateSaleV1 is ILock, Ownable, ReentrancyGuard {
     using SafeMath for uint256;
     
     struct Package {
+        uint256 index;
         address buyer;
         uint256 amount;
         uint256 unlockTime;
@@ -27,7 +28,7 @@ contract PrivateSaleV1 is ILock, Ownable, ReentrancyGuard {
     IERC20 public immutable token;
     IERC20 public immutable tokenUsdt;
     address public immutable receiveAddress;
-    uint256 public LOCK_DURATION = 15552000;
+    uint256 public LOCK_DURATION = 600;
     bool public isLock;
 
     event Buy(
@@ -83,6 +84,7 @@ contract PrivateSaleV1 is ILock, Ownable, ReentrancyGuard {
 
         // add package history
         packageHistory[packageIndex] = Package(
+            packageIndex,                       // package index
             _sender,                            // buyer
             packages[_amount],                  // package
             block.timestamp + LOCK_DURATION,    // duration
